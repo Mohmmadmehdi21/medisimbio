@@ -1,0 +1,53 @@
+name: medisimbio_ui
+description: Medisimbio onboarding, authentication and Med ID profile setup UI.
+publish_to: "none"
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # QR Code
+  qr_flutter: ^4.1.0
+
+  # Firebase
+  firebase_core: ^4.15.0
+  firebase_auth: ^6.7.0
+  cloud_firestore: ^6.10.0
+
+  # Auth Providers
+  google_sign_in: ^6.2.2
+
+  # Local Preferences Persistence
+  shared_preferences: ^2.5.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    # Splash
+    - assets/images/splash_screen_logo.png
+
+    # Onboarding
+    - assets/images/onboarding_screen_01.png
+    - assets/images/onboarding_screen_02.png
+    - assets/images/onboarding_screen_03.png
+    - assets/images/onboarding_screen_04.png
+
+    # App Logo
+    - assets/images/medisimbio.png
+
+    # Google Logo
+    - assets/images/google_logo.png

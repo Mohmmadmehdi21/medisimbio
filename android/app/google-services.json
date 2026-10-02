@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "916586785452",
+    "project_id": "medisimbio-patient",
+    "storage_bucket": "medisimbio-patient.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:916586785452:android:32ab479489d4cf4ff0cd09",
+        "android_client_info": {
+          "package_name": "com.example.medisimbio"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "916586785452-4n8hvt9jffjla774v4urs3tcdaejlmap.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.medisimbio",
+            "certificate_hash": "3d79c4941d6eaf7d42ee8679fd3a90503991baa8"
+          }
+        },
+        {
+          "client_id": "916586785452-rhfvfhilurd5ic07dk73dd6o89jfo5qb.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBwXXPlVpG643_2opiY7bpyO4WAaRFjjZI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "916586785452-rhfvfhilurd5ic07dk73dd6o89jfo5qb.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "916586785452-guj4a9qbtnqut2phflqjooq7krj218bd.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.medisimbio"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,35 @@
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "auth": {
+    "providers": {
+      "emailPassword": true,
+      "phone": true,
+      "googleSignIn": {}
+    }
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "medisimbio-patient",
+          "appId": "1:916586785452:android:32ab479489d4cf4ff0cd09",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "medisimbio-patient",
+          "configurations": {
+            "android": "1:916586785452:android:32ab479489d4cf4ff0cd09",
+            "ios": "1:916586785452:ios:fa4ab4bc21d59784f0cd09",
+            "macos": "1:916586785452:ios:fa4ab4bc21d59784f0cd09",
+            "web": "1:916586785452:web:6e100e70f6b7d87df0cd09",
+            "windows": "1:916586785452:web:5c50571d374dcd63f0cd09"
+          }
+        }
+      }
+    }
+  }
+}
