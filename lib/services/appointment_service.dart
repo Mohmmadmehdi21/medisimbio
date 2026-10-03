@@ -35,8 +35,11 @@ class AppointmentService {
   Stream<Appointment?> streamLatestAppointment(String uid) {
     return streamUserAppointments(uid).map((appointments) {
       if (appointments.isEmpty) return null;
-      // Return the first upcoming appointment or latest created appointment
-      final upcoming = appointments.where((a) => a.status == 'Upcoming');
+      // Return the first upcoming or active appointment or latest created appointment
+      final upcoming = appointments.where((a) =>
+          a.status == 'Upcoming' ||
+          a.status == 'CONFIRMED' ||
+          a.status == 'PENDING');
       if (upcoming.isNotEmpty) {
         return upcoming.first;
       }
@@ -57,5 +60,18 @@ class AppointmentService {
       return Appointment.fromJson(doc.data()!);
     }
     return null;
+  }
+
+  Stream<Appointment?> streamAppointmentById(
+      String uid, String appointmentId) {
+    return _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('appointments')
+        .doc(appointmentId)
+        .snapshots()
+        .map((doc) => doc.exists && doc.data() != null
+            ? Appointment.fromJson(doc.data()!)
+            : null);
   }
 }
