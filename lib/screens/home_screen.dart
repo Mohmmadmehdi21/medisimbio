@@ -6,8 +6,10 @@ import 'package:medisimbio_ui/screens/auth_wrapper.dart';
 import 'package:medisimbio_ui/screens/care_screens.dart';
 import 'package:medisimbio_ui/screens/create_med_id_screen.dart';
 import 'package:medisimbio_ui/screens/edit_profile_screen.dart';
+import 'package:medisimbio_ui/screens/emergency_screens.dart';
 import 'package:medisimbio_ui/screens/existing_med_id_screen.dart';
 import 'package:medisimbio_ui/screens/feature_placeholder_screens.dart';
+import 'package:medisimbio_ui/screens/medical_records_screens.dart';
 import 'package:medisimbio_ui/services/appointment_service.dart';
 import 'package:medisimbio_ui/services/firebase_service.dart';
 import 'package:medisimbio_ui/services/profile_service.dart';
@@ -34,10 +36,9 @@ class _HomeScreenState extends State<HomeScreen> {
         MaterialPageRoute(builder: (_) => const CareServicesScreen()),
       );
     } else if (index == 2) {
-      _navigateToFeature(
-        'Medical Records',
-        Icons.folder_shared_outlined,
-        Colors.blue,
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const MedicalRecordsScreen()),
       );
     } else if (index == 3) {
       Navigator.push(
@@ -247,11 +248,15 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               ),
                               ElevatedButton(
-                                onPressed: () => _navigateToFeature(
-                                  'Emergency Assistance',
-                                  Icons.sos,
-                                  Colors.red,
-                                ),
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          const EmergencyCareScreen(),
+                                    ),
+                                  );
+                                },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.red,
                                   foregroundColor: Colors.white,
@@ -331,11 +336,14 @@ class _HomeScreenState extends State<HomeScreen> {
                               title: 'Records',
                               icon: Icons.folder_shared_outlined,
                               accentColor: Colors.blue,
-                              onTap: () => _navigateToFeature(
-                                'Medical Records',
-                                Icons.folder_shared_outlined,
-                                Colors.blue,
-                              ),
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) =>
+                                          const MedicalRecordsScreen()),
+                                );
+                              },
                             ),
                             _QuickActionCard(
                               title: 'Pharmacy',
