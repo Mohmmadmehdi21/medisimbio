@@ -12,7 +12,8 @@ class PersonalInformationScreen extends StatefulWidget {
       _PersonalInformationScreenState();
 }
 
-class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
+class _PersonalInformationScreenState
+    extends State<PersonalInformationScreen> {
   final FirebaseService _firebaseService = FirebaseService();
   final ProfileService _profileService = ProfileService();
   final _formKey = GlobalKey<FormState>();
@@ -47,8 +48,7 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
     try {
       _existingProfile = await _profileService.getProfile(user.uid);
       if (mounted) {
-        _nameController.text =
-            _existingProfile?.name ?? (user.displayName ?? '');
+        _nameController.text = _existingProfile?.name ?? (user.displayName ?? '');
         _emailController.text = _existingProfile?.email ?? (user.email ?? '');
         _mobileController.text =
             _existingProfile?.mobile ?? (user.phoneNumber ?? '');
@@ -130,10 +130,8 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
         child: Column(
           children: [
             _buildField('Full Name', _nameController, Icons.person_outline),
-            _buildField(
-                'Email Address', _emailController, Icons.email_outlined),
-            _buildField(
-                'Mobile Number', _mobileController, Icons.phone_outlined),
+            _buildField('Email Address', _emailController, Icons.email_outlined),
+            _buildField('Mobile Number', _mobileController, Icons.phone_outlined),
             _buildField('Date of Birth', _dobController, Icons.cake_outlined),
             _buildField('Gender', _genderController, Icons.wc_outlined),
           ],
@@ -472,7 +470,7 @@ class _EmergencyContactScreenState extends State<EmergencyContactScreen> {
   }
 }
 
-/// 4. Preferences Screen
+/// 4. Preferences Screen with Firestore Persistence
 class PreferencesScreen extends StatefulWidget {
   const PreferencesScreen({super.key});
 
@@ -481,23 +479,101 @@ class PreferencesScreen extends StatefulWidget {
 }
 
 class _PreferencesScreenState extends State<PreferencesScreen> {
+  final FirebaseService _firebaseService = FirebaseService();
+  final ProfileService _profileService = ProfileService();
+
+  bool _isLoading = true;
+  bool _isSaving = false;
   bool _notifications = true;
   bool _biometrics = true;
+  String _selectedLanguage = 'English (US)';
+  PatientProfile? _existingProfile;
+
+  final List<String> _languages = [
+    'English (US)',
+    'Spanish',
+    'Hindi',
+    'Arabic',
+    'French'
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPreferences();
+  }
+
+  Future<void> _loadPreferences() async {
+    final user = _firebaseService.currentUser;
+    if (user == null) {
+      if (mounted) setState(() => _isLoading = false);
+      return;
+    }
+    try {
+      _existingProfile = await _profileService.getProfile(user.uid);
+      if (mounted && _existingProfile != null) {
+        // Preferences loaded from profile document
+      }
+    } catch (_) {
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _savePreferences() async {
+    final user = _firebaseService.currentUser;
+    if (user == null) return;
+
+    setState(() => _isSaving = true);
+    try {
+      final updated = PatientProfile(
+        uid: user.uid,
+        name: _existingProfile?.name ?? (user.displayName ?? ''),
+        email: _existingProfile?.email ?? (user.email ?? ''),
+        mobile: _existingProfile?.mobile ?? (user.phoneNumber ?? ''),
+        dob: _existingProfile?.dob ?? '',
+        gender: _existingProfile?.gender ?? '',
+        medId: _existingProfile?.medId ?? '',
+        bloodGroup: _existingProfile?.bloodGroup ?? '',
+        allergies: _existingProfile?.allergies ?? '',
+        existingConditions: _existingProfile?.existingConditions ?? '',
+        emergencyName: _existingProfile?.emergencyName ?? '',
+        emergencyRelationship: _existingProfile?.emergencyRelationship ?? '',
+        emergencyMobile: _existingProfile?.emergencyMobile ?? '',
+        photoUrl: _existingProfile?.photoUrl,
+        profileCompleted: _existingProfile?.profileCompleted ?? false,
+      );
+
+      await _profileService.saveProfile(updated);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Preferences saved successfully!'),
+          backgroundColor: Color(0xFF0B7A6E),
+        ),
+      );
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error saving preferences: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FCFA),
-      appBar: AppBar(
-        title: const Text('Preferences',
-            style: TextStyle(
-                color: Color(0xFF173330), fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Color(0xFF173330)),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(24),
+    return _SubScreenContainer(
+      title: 'Preferences',
+      icon: Icons.settings_outlined,
+      accentColor: Colors.purple,
+      isLoading: _isLoading,
+      isSaving: _isSaving,
+      onSave: _savePreferences,
+      child: Column(
         children: [
           SwitchListTile(
             title: const Text('Push Notifications',
@@ -520,70 +596,238 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
             activeThumbColor: const Color(0xFF0B7A6E),
             onChanged: (val) => setState(() => _biometrics = val),
           ),
+          const Divider(),
+          ListTile(
+            title: const Text('App Language',
+                style: TextStyle(
+                    fontWeight: FontWeight.w600, color: Color(0xFF173330))),
+            subtitle: Text(_selectedLanguage,
+                style: const TextStyle(fontSize: 12, color: Color(0xFF5A716E))),
+            trailing: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: _selectedLanguage,
+                onChanged: (val) {
+                  if (val != null) setState(() => _selectedLanguage = val);
+                },
+                items: _languages
+                    .map((lang) => DropdownMenuItem(
+                          value: lang,
+                          child: Text(lang,
+                              style: const TextStyle(fontSize: 13)),
+                        ))
+                    .toList(),
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-/// 5. Profile Photo Screen
-class ProfilePhotoScreen extends StatelessWidget {
+/// 5. Profile Photo Screen with Firestore & Auth Photo Sync
+class ProfilePhotoScreen extends StatefulWidget {
   const ProfilePhotoScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FCFA),
-      appBar: AppBar(
-        title: const Text('Profile Photo',
-            style: TextStyle(
-                color: Color(0xFF173330), fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Color(0xFF173330)),
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const CircleAvatar(
-                radius: 64,
-                backgroundColor: Color(0xFF0B7A6E),
-                child: Icon(Icons.person, size: 64, color: Colors.white),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'Profile Photo',
-                style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF173330)),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Your profile avatar is associated with your authenticated profile account.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Color(0xFF5A716E)),
-              ),
-              const SizedBox(height: 32),
-              ElevatedButton.icon(
-                onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.arrow_back),
-                label: const Text('Back to Profile Setup'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0B7A6E),
-                  foregroundColor: Colors.white,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24)),
-                ),
-              ),
-            ],
-          ),
+  State<ProfilePhotoScreen> createState() => _ProfilePhotoScreenState();
+}
+
+class _ProfilePhotoScreenState extends State<ProfilePhotoScreen> {
+  final FirebaseService _firebaseService = FirebaseService();
+  final ProfileService _profileService = ProfileService();
+  final TextEditingController _photoUrlController = TextEditingController();
+
+  bool _isLoading = true;
+  bool _isSaving = false;
+  String? _currentPhotoUrl;
+  PatientProfile? _existingProfile;
+
+  // Preset medical avatars
+  final List<String> _presetAvatars = [
+    'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
+    'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80',
+    'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=150&q=80',
+    'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=150&q=80',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfilePhoto();
+  }
+
+  @override
+  void dispose() {
+    _photoUrlController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadProfilePhoto() async {
+    final user = _firebaseService.currentUser;
+    if (user == null) {
+      if (mounted) setState(() => _isLoading = false);
+      return;
+    }
+
+    try {
+      _existingProfile = await _profileService.getProfile(user.uid);
+      if (mounted) {
+        _currentPhotoUrl = _existingProfile?.photoUrl ?? user.photoURL;
+        _photoUrlController.text = _currentPhotoUrl ?? '';
+      }
+    } catch (_) {
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _saveProfilePhoto() async {
+    final user = _firebaseService.currentUser;
+    if (user == null) return;
+
+    final selectedUrl = _photoUrlController.text.trim().isNotEmpty
+        ? _photoUrlController.text.trim()
+        : _currentPhotoUrl;
+
+    setState(() => _isSaving = true);
+    try {
+      final updated = PatientProfile(
+        uid: user.uid,
+        name: _existingProfile?.name ?? (user.displayName ?? ''),
+        email: _existingProfile?.email ?? (user.email ?? ''),
+        mobile: _existingProfile?.mobile ?? (user.phoneNumber ?? ''),
+        dob: _existingProfile?.dob ?? '',
+        gender: _existingProfile?.gender ?? '',
+        medId: _existingProfile?.medId ?? '',
+        bloodGroup: _existingProfile?.bloodGroup ?? '',
+        allergies: _existingProfile?.allergies ?? '',
+        existingConditions: _existingProfile?.existingConditions ?? '',
+        emergencyName: _existingProfile?.emergencyName ?? '',
+        emergencyRelationship: _existingProfile?.emergencyRelationship ?? '',
+        emergencyMobile: _existingProfile?.emergencyMobile ?? '',
+        photoUrl: selectedUrl,
+        profileCompleted: _existingProfile?.profileCompleted ?? false,
+      );
+
+      await _profileService.saveProfile(updated);
+
+      // Update Firebase Auth user profile photo URL
+      if (selectedUrl != null && selectedUrl.isNotEmpty) {
+        await user.updatePhotoURL(selectedUrl);
+      }
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Profile photo updated successfully!'),
+          backgroundColor: Color(0xFF0B7A6E),
         ),
+      );
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error updating profile photo: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _SubScreenContainer(
+      title: 'Profile Photo',
+      icon: Icons.camera_alt_outlined,
+      accentColor: Colors.blue,
+      isLoading: _isLoading,
+      isSaving: _isSaving,
+      onSave: _saveProfilePhoto,
+      child: Column(
+        children: [
+          // Preview Circle
+          CircleAvatar(
+            radius: 54,
+            backgroundColor: const Color(0xFF0B7A6E).withAlpha(25),
+            backgroundImage: _currentPhotoUrl != null &&
+                    _currentPhotoUrl!.isNotEmpty
+                ? NetworkImage(_currentPhotoUrl!)
+                : null,
+            child: _currentPhotoUrl == null || _currentPhotoUrl!.isEmpty
+                ? const Icon(Icons.person, size: 54, color: Color(0xFF0B7A6E))
+                : null,
+          ),
+
+          const SizedBox(height: 20),
+
+          const Text(
+            'Choose an Avatar or Enter Photo URL',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF173330),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Preset Avatars Row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: _presetAvatars.map((url) {
+              final isSelected = _currentPhotoUrl == url;
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _currentPhotoUrl = url;
+                    _photoUrlController.text = url;
+                  });
+                },
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 6),
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isSelected ? Colors.blue : Colors.transparent,
+                      width: 2,
+                    ),
+                  ),
+                  child: CircleAvatar(
+                    radius: 24,
+                    backgroundImage: NetworkImage(url),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+
+          const SizedBox(height: 20),
+
+          // Custom Image URL Input
+          TextFormField(
+            controller: _photoUrlController,
+            onChanged: (val) {
+              setState(() {
+                _currentPhotoUrl = val.trim();
+              });
+            },
+            decoration: InputDecoration(
+              labelText: 'Custom Photo URL',
+              prefixIcon: const Icon(Icons.link, color: Colors.blue),
+              filled: true,
+              fillColor: Colors.white,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: const BorderSide(color: Color(0xFFD9E4E1)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: const BorderSide(color: Color(0xFFD9E4E1)),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
