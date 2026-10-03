@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:medisimbio_ui/services/firebase_service.dart';
 import 'package:medisimbio_ui/screens/auth_wrapper.dart';
+import 'package:medisimbio_ui/screens/forgot_password_screen.dart';
 import 'package:medisimbio_ui/screens/register_screen.dart';
+import 'package:medisimbio_ui/services/firebase_service.dart';
 
 /// Country code model for extensible international phone support.
 class CountryCode {
@@ -463,19 +464,15 @@ class _LoginScreenState extends State<LoginScreen> {
   // FORGOT PASSWORD
   // ================================================================
 
-  Future<void> _forgotPassword() async {
-    final email = _emailOrMobileController.text.trim();
-    if (email.isEmpty || !email.contains('@')) {
-      _showMessage('Please enter a valid email address first.');
-      return;
-    }
-
-    try {
-      await _firebaseService.sendPasswordResetEmail(email);
-      _showMessage('Password reset email sent to $email.');
-    } catch (e) {
-      _showMessage(_cleanErrorMessage(e));
-    }
+  void _forgotPassword() {
+    final input = _emailOrMobileController.text.trim();
+    final initialEmail = input.contains('@') ? input : '';
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ForgotPasswordScreen(initialEmail: initialEmail),
+      ),
+    );
   }
 
   // ================================================================
