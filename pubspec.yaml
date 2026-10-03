@@ -27,6 +27,9 @@ dependencies:
   # Local Preferences Persistence
   shared_preferences: ^2.5.2
 
+  # URL Launcher for External Navigation
+  url_launcher: ^6.3.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
