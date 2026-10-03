@@ -4,6 +4,7 @@ import 'package:medisimbio_ui/models/patient_profile.dart';
 import 'package:medisimbio_ui/screens/ai_health_screens.dart';
 import 'package:medisimbio_ui/screens/auth_wrapper.dart';
 import 'package:medisimbio_ui/screens/care_screens.dart';
+import 'package:medisimbio_ui/screens/create_med_id_screen.dart';
 import 'package:medisimbio_ui/screens/edit_profile_screen.dart';
 import 'package:medisimbio_ui/screens/existing_med_id_screen.dart';
 import 'package:medisimbio_ui/screens/feature_placeholder_screens.dart';
@@ -175,11 +176,19 @@ class _HomeScreenState extends State<HomeScreen> {
                         const SizedBox(height: 4),
                         GestureDetector(
                           onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => const ExistingMedIdScreen()),
-                            );
+                            if (profile?.medId.isNotEmpty == true) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) => const ExistingMedIdScreen()),
+                              );
+                            } else {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) => const CreateMedIdScreen()),
+                              );
+                            }
                           },
                           child: Text(
                             'Med ID: $medId',
@@ -193,7 +202,72 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
 
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 20),
+
+                        // EMERGENCY ACCESS BANNER
+                        Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF2F2),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.red.shade200),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: const BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.sos_outlined, color: Colors.white, size: 22),
+                              ),
+                              const SizedBox(width: 12),
+                              const Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Emergency Assistance',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF900000),
+                                      ),
+                                    ),
+                                    SizedBox(height: 2),
+                                    Text(
+                                      'Instant emergency support & contacts',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Color(0xFFB3261E),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              ElevatedButton(
+                                onPressed: () => _navigateToFeature(
+                                  'Emergency Assistance',
+                                  Icons.sos,
+                                  Colors.red,
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red,
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                ),
+                                child: const Text('SOS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 20),
 
                         // QUICK ACTION GRID (2 rows x 3 columns)
                         GridView.count(
@@ -490,6 +564,136 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                           ],
+                        ),
+                        const SizedBox(height: 24),
+
+                        // RECENT PRESCRIPTION SECTION
+                        _SectionHeader(
+                          title: 'Recent Prescriptions',
+                          onViewAll: () => _navigateToFeature(
+                            'Prescriptions',
+                            Icons.local_pharmacy_outlined,
+                            Colors.deepOrange,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        _EmptyDataCard(
+                          icon: Icons.medication_outlined,
+                          iconColor: Colors.deepOrange,
+                          title: 'No Recent Prescriptions',
+                          subtitle:
+                              'Prescriptions issued by your doctors will appear here.',
+                          onTap: () => _navigateToFeature(
+                            'Prescriptions',
+                            Icons.local_pharmacy_outlined,
+                            Colors.deepOrange,
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        // RECENT LAB REPORT SECTION
+                        _SectionHeader(
+                          title: 'Recent Lab Reports',
+                          onViewAll: () => _navigateToFeature(
+                            'Lab Reports',
+                            Icons.science_outlined,
+                            Colors.teal,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        _EmptyDataCard(
+                          icon: Icons.science_outlined,
+                          iconColor: Colors.teal,
+                          title: 'No Recent Lab Reports',
+                          subtitle:
+                              'Diagnostic & lab test reports will be automatically attached here.',
+                          onTap: () => _navigateToFeature(
+                            'Lab Reports',
+                            Icons.science_outlined,
+                            Colors.teal,
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        // RECENT MEDICAL ACTIVITY SECTION
+                        _SectionHeader(
+                          title: 'Recent Medical Activity',
+                          onViewAll: () => _navigateToFeature(
+                            'Medical History',
+                            Icons.history_outlined,
+                            const Color(0xFF0B7A6E),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        StreamBuilder<Appointment?>(
+                          stream: _appointmentService
+                              .streamLatestAppointment(user.uid),
+                          builder: (context, apptSnapshot) {
+                            final latestAppt = apptSnapshot.data;
+                            if (latestAppt != null) {
+                              return Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                      color: const Color(0xFFE2EEEA)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF0B7A6E)
+                                            .withAlpha(25),
+                                        borderRadius:
+                                            BorderRadius.circular(12),
+                                      ),
+                                      child: const Icon(
+                                        Icons.history_edu,
+                                        color: Color(0xFF0B7A6E),
+                                        size: 22,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Appointment Booked: ${latestAppt.doctorName}',
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.bold,
+                                              color: Color(0xFF173330),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            '${latestAppt.specialty} • ${latestAppt.dateTime}',
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              color: Color(0xFF5A716E),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
+                            return const _EmptyDataCard(
+                              icon: Icons.history_outlined,
+                              iconColor: Color(0xFF0B7A6E),
+                              title: 'No Recent Medical Activity',
+                              subtitle:
+                                  'Your healthcare interactions and appointments will be recorded here.',
+                            );
+                          },
                         ),
                         const SizedBox(height: 24),
                       ],
@@ -943,12 +1147,16 @@ class _HealthSnapshotCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.baseline,
                   textBaseline: TextBaseline.alphabetic,
                   children: [
-                    Text(
-                      value,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF173330),
+                    Flexible(
+                      child: Text(
+                        value,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF173330),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 4),
@@ -963,6 +1171,122 @@ class _HealthSnapshotCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  final VoidCallback onViewAll;
+
+  const _SectionHeader({
+    required this.title,
+    required this.onViewAll,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF173330),
+          ),
+        ),
+        TextButton(
+          onPressed: onViewAll,
+          child: const Text(
+            'View All',
+            style: TextStyle(
+              color: Color(0xFF0B7A6E),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _EmptyDataCard extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String title;
+  final String subtitle;
+  final VoidCallback? onTap;
+
+  const _EmptyDataCard({
+    required this.icon,
+    required this.iconColor,
+    required this.title,
+    required this.subtitle,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFE2EEEA)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(4),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: iconColor.withAlpha(25),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                icon,
+                color: iconColor,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF173330),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF5A716E),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
