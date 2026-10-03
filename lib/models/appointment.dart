@@ -1,3 +1,15 @@
+class AppointmentStatus {
+  static const String pending = 'PENDING';
+  static const String confirmed = 'CONFIRMED';
+  static const String upcoming = 'Upcoming';
+  static const String rescheduled = 'RESCHEDULED';
+  static const String cancelled = 'CANCELLED';
+  static const String completed = 'COMPLETED';
+  static const String checkedIn = 'CHECKED_IN';
+  static const String waiting = 'WAITING';
+  static const String inConsultation = 'IN_CONSULTATION';
+}
+
 class Appointment {
   final String id;
   final String uid;
@@ -7,8 +19,17 @@ class Appointment {
   final String hospitalName;
   final String dateTime;
   final String consultationType; // 'In-Person', 'Video Consultation'
-  final String status; // 'Upcoming', 'Completed', 'Cancelled'
+  final String status; // 'CONFIRMED', 'Upcoming', 'PENDING', 'CANCELLED', 'COMPLETED'
+  final double consultationFee;
   final bool isLiveTrackingActive;
+  final String? tokenNumber;
+  final String? currentServingToken;
+  final int? queuePosition;
+  final int? estimatedWaitMinutes;
+  final DateTime? trackingLastUpdated;
+  final String? hospitalAddress;
+  final double? latitude;
+  final double? longitude;
   final DateTime? createdAt;
 
   Appointment({
@@ -21,7 +42,16 @@ class Appointment {
     required this.dateTime,
     required this.status,
     this.consultationType = 'In-Person',
+    this.consultationFee = 0.0,
     this.isLiveTrackingActive = false,
+    this.tokenNumber,
+    this.currentServingToken,
+    this.queuePosition,
+    this.estimatedWaitMinutes,
+    this.trackingLastUpdated,
+    this.hospitalAddress,
+    this.latitude,
+    this.longitude,
     this.createdAt,
   });
 
@@ -36,7 +66,16 @@ class Appointment {
       'dateTime': dateTime,
       'consultationType': consultationType,
       'status': status,
+      'consultationFee': consultationFee,
       'isLiveTrackingActive': isLiveTrackingActive,
+      'tokenNumber': tokenNumber,
+      'currentServingToken': currentServingToken,
+      'queuePosition': queuePosition,
+      'estimatedWaitMinutes': estimatedWaitMinutes,
+      'trackingLastUpdated': trackingLastUpdated?.toIso8601String(),
+      'hospitalAddress': hospitalAddress,
+      'latitude': latitude,
+      'longitude': longitude,
       'createdAt': (createdAt ?? DateTime.now()).toIso8601String(),
     };
   }
@@ -51,8 +90,19 @@ class Appointment {
       hospitalName: json['hospitalName'] ?? '',
       dateTime: json['dateTime'] ?? '',
       consultationType: json['consultationType'] ?? 'In-Person',
-      status: json['status'] ?? 'Upcoming',
+      status: json['status'] ?? 'CONFIRMED',
+      consultationFee: (json['consultationFee'] as num?)?.toDouble() ?? 0.0,
       isLiveTrackingActive: json['isLiveTrackingActive'] ?? false,
+      tokenNumber: json['tokenNumber']?.toString(),
+      currentServingToken: json['currentServingToken']?.toString(),
+      queuePosition: json['queuePosition'] as int?,
+      estimatedWaitMinutes: json['estimatedWaitMinutes'] as int?,
+      trackingLastUpdated: json['trackingLastUpdated'] != null
+          ? DateTime.tryParse(json['trackingLastUpdated'])
+          : null,
+      hospitalAddress: json['hospitalAddress']?.toString(),
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'])
           : null,
