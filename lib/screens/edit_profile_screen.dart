@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:medisimbio_ui/models/patient_profile.dart';
+import 'package:medisimbio_ui/screens/profile_sub_screens.dart';
 import 'package:medisimbio_ui/services/firebase_service.dart';
 import 'package:medisimbio_ui/services/profile_service.dart';
 
@@ -30,6 +31,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   bool _isLoading = true;
   bool _isSaving = false;
   String _medId = '';
+  String? _photoUrl;
 
   @override
   void initState() {
@@ -61,6 +63,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       if (profile != null && mounted) {
         setState(() {
           _medId = profile.medId;
+          _photoUrl = profile.photoUrl ?? user.photoURL;
           _nameController.text =
               profile.name.isNotEmpty ? profile.name : (user.displayName ?? '');
           _mobileController.text = profile.mobile.isNotEmpty
@@ -122,6 +125,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         emergencyName: _emergencyNameController.text.trim(),
         emergencyRelationship: _emergencyRelationController.text.trim(),
         emergencyMobile: _emergencyMobileController.text.trim(),
+        photoUrl: _photoUrl,
         profileCompleted: true,
       );
 
@@ -147,6 +151,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final user = _firebaseService.currentUser;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8FCFA),
       appBar: AppBar(
@@ -174,11 +180,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       children: [
                         Stack(
                           children: [
-                            const CircleAvatar(
+                            CircleAvatar(
                               radius: 50,
-                              backgroundColor: Color(0xFF0B7A6E),
-                              child: Icon(Icons.person,
-                                  size: 50, color: Colors.white),
+                              backgroundColor: const Color(0xFF0B7A6E),
+                              backgroundImage: _photoUrl != null &&
+                                      _photoUrl!.isNotEmpty
+                                  ? NetworkImage(_photoUrl!)
+                                  : (user?.photoURL != null &&
+                                          user!.photoURL!.isNotEmpty
+                                      ? NetworkImage(user.photoURL!)
+                                      : null),
+                              child: (_photoUrl == null ||
+                                          _photoUrl!.isEmpty) &&
+                                      (user?.photoURL == null ||
+                                          user!.photoURL!.isEmpty)
+                                  ? const Icon(Icons.person,
+                                      size: 50, color: Colors.white)
+                                  : null,
                             ),
                             Positioned(
                               bottom: 0,
@@ -197,11 +215,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         ),
                         const SizedBox(height: 12),
                         TextButton(
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text('Photo picker selected')),
+                          onPressed: () async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const ProfilePhotoScreen()),
                             );
+                            _loadExistingProfile();
                           },
                           child: const Text(
                             'Change Photo',
