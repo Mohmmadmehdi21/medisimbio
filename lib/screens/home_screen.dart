@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:medisimbio_ui/models/appointment.dart';
 import 'package:medisimbio_ui/models/patient_profile.dart';
+import 'package:medisimbio_ui/screens/ai_health_screens.dart';
 import 'package:medisimbio_ui/screens/auth_wrapper.dart';
+import 'package:medisimbio_ui/screens/care_screens.dart';
 import 'package:medisimbio_ui/screens/edit_profile_screen.dart';
 import 'package:medisimbio_ui/screens/existing_med_id_screen.dart';
 import 'package:medisimbio_ui/screens/feature_placeholder_screens.dart';
+import 'package:medisimbio_ui/services/appointment_service.dart';
 import 'package:medisimbio_ui/services/firebase_service.dart';
 import 'package:medisimbio_ui/services/profile_service.dart';
 
@@ -17,16 +21,16 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final FirebaseService _firebaseService = FirebaseService();
   final ProfileService _profileService = ProfileService();
+  final AppointmentService _appointmentService = AppointmentService();
   int _currentIndex = 0;
 
   void _onBottomNavTapped(int index) {
     if (index == 0) {
       setState(() => _currentIndex = 0);
     } else if (index == 1) {
-      _navigateToFeature(
-        'Care Management',
-        Icons.medical_services_outlined,
-        const Color(0xFF0B7A6E),
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const CareServicesScreen()),
       );
     } else if (index == 2) {
       _navigateToFeature(
@@ -35,11 +39,9 @@ class _HomeScreenState extends State<HomeScreen> {
         Colors.blue,
       );
     } else if (index == 3) {
-      // AI Tab MUST point to AI Health
-      _navigateToFeature(
-        'AI Health',
-        Icons.psychology_outlined,
-        Colors.purple,
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const AiHealthStartScreen()),
       );
     } else if (index == 4) {
       _openProfileScreen();
@@ -120,7 +122,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                // Notification Icon
                                 IconButton(
                                   onPressed: () {
                                     _navigateToFeature(
@@ -136,7 +137,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                   tooltip: 'Notifications',
                                 ),
                                 const SizedBox(width: 4),
-                                // Profile Avatar
                                 GestureDetector(
                                   onTap: _openProfileScreen,
                                   child: CircleAvatar(
@@ -208,21 +208,27 @@ class _HomeScreenState extends State<HomeScreen> {
                               title: 'AI Health',
                               icon: Icons.psychology_outlined,
                               accentColor: Colors.purple,
-                              onTap: () => _navigateToFeature(
-                                'AI Health Assistant',
-                                Icons.psychology_outlined,
-                                Colors.purple,
-                              ),
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) =>
+                                          const AiHealthStartScreen()),
+                                );
+                              },
                             ),
                             _QuickActionCard(
                               title: 'Find Doctor',
                               icon: Icons.person_search_outlined,
                               accentColor: const Color(0xFF0B7A6E),
-                              onTap: () => _navigateToFeature(
-                                'Find Doctor',
-                                Icons.person_search_outlined,
-                                const Color(0xFF0B7A6E),
-                              ),
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) =>
+                                          const DoctorDiscoveryScreen()),
+                                );
+                              },
                             ),
                             _QuickActionCard(
                               title: 'Hospitals',
@@ -238,11 +244,14 @@ class _HomeScreenState extends State<HomeScreen> {
                               title: 'Appointments',
                               icon: Icons.calendar_today_outlined,
                               accentColor: Colors.orange,
-                              onTap: () => _navigateToFeature(
-                                'Appointments',
-                                Icons.calendar_today_outlined,
-                                Colors.orange,
-                              ),
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) =>
+                                          const MyAppointmentsScreen()),
+                                );
+                              },
                             ),
                             _QuickActionCard(
                               title: 'Records',
@@ -269,75 +278,185 @@ class _HomeScreenState extends State<HomeScreen> {
 
                         const SizedBox(height: 24),
 
-                        // NEXT APPOINTMENT SECTION (Clean Real/Empty State)
-                        const Text(
-                          'Next Appointment',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF173330),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: const Color(0xFFE2EEEA)),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withAlpha(6),
-                                blurRadius: 10,
-                                offset: const Offset(0, 2),
+                        // NEXT APPOINTMENT SECTION (Real Stream + Clean Empty State)
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Next Appointment',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF173330),
                               ),
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF0B7A6E).withAlpha(25),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: const Icon(
-                                  Icons.calendar_today_outlined,
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) =>
+                                          const MyAppointmentsScreen()),
+                                );
+                              },
+                              child: const Text(
+                                'View All',
+                                style: TextStyle(
                                   color: Color(0xFF0B7A6E),
-                                  size: 24,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              const SizedBox(width: 12),
-                              const Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+
+                        StreamBuilder<Appointment?>(
+                          stream: _appointmentService
+                              .streamLatestAppointment(user.uid),
+                          builder: (context, apptSnapshot) {
+                            final appt = apptSnapshot.data;
+
+                            if (appt == null) {
+                              return Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                      color: const Color(0xFFE2EEEA)),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withAlpha(6),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Row(
                                   children: [
-                                    Text(
-                                      'No Upcoming Appointments',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                        color: Color(0xFF173330),
+                                    Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF0B7A6E)
+                                            .withAlpha(25),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: const Icon(
+                                        Icons.calendar_today_outlined,
+                                        color: Color(0xFF0B7A6E),
+                                        size: 24,
                                       ),
                                     ),
-                                    SizedBox(height: 2),
-                                    Text(
-                                      'Book appointments with certified healthcare providers.',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Color(0xFF5A716E),
+                                    const SizedBox(width: 12),
+                                    const Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'No Upcoming Appointments',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.bold,
+                                              color: Color(0xFF173330),
+                                            ),
+                                          ),
+                                          SizedBox(height: 2),
+                                          Text(
+                                            'Book appointments with certified healthcare providers.',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Color(0xFF5A716E),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],
                                 ),
+                              );
+                            }
+
+                            // Displays REAL Appointment from Firestore
+                            return GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) =>
+                                          const MyAppointmentsScreen()),
+                                );
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                      color: const Color(0xFF0B7A6E)
+                                          .withAlpha(50)),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withAlpha(6),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF0B7A6E)
+                                            .withAlpha(25),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: const Icon(
+                                        Icons.event_available,
+                                        color: Color(0xFF0B7A6E),
+                                        size: 24,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            appt.doctorName,
+                                            style: const TextStyle(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.bold,
+                                              color: Color(0xFF173330),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            '${appt.specialty} • ${appt.dateTime}',
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              color: Color(0xFF0B7A6E),
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const Icon(Icons.arrow_forward_ios,
+                                        size: 14, color: Color(0xFF8C9E9A)),
+                                  ],
+                                ),
                               ),
-                            ],
-                          ),
+                            );
+                          },
                         ),
 
                         const SizedBox(height: 24),
 
-                        // HEALTH SNAPSHOT SECTION (Clean Real/Empty State)
+                        // HEALTH SNAPSHOT SECTION
                         const Text(
                           'Health Snapshot',
                           style: TextStyle(
@@ -418,7 +537,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-/// Dedicated Profile & Logout Screen
+/// Profile & Logout View Screen
 class ProfileViewScreen extends StatefulWidget {
   const ProfileViewScreen({super.key});
 
@@ -474,13 +593,11 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                           final messenger = ScaffoldMessenger.of(context);
                           setDialogState(() => _isLoggingOut = true);
                           try {
-                            // Call Firebase signOut abstraction
                             await _firebaseService.signOut();
 
                             if (dialogContext.mounted) {
                               Navigator.pop(dialogContext);
                             }
-                            // Reset navigation stack cleanly to AuthWrapper -> LoginScreen
                             rootNavigator.pushAndRemoveUntil(
                               MaterialPageRoute(
                                   builder: (_) => const AuthWrapper()),
@@ -563,7 +680,6 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                 return ListView(
                   padding: const EdgeInsets.all(24),
                   children: [
-                    // Profile Header Card
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
@@ -621,10 +737,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                         ],
                       ),
                     ),
-
                     const SizedBox(height: 16),
-
-                    // Med ID Action Tile
                     ListTile(
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
@@ -652,10 +765,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                         );
                       },
                     ),
-
                     const SizedBox(height: 12),
-
-                    // Edit Profile Action Tile
                     ListTile(
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
@@ -681,10 +791,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                         );
                       },
                     ),
-
                     const SizedBox(height: 32),
-
-                    // LOGOUT BUTTON SECTION
                     SizedBox(
                       width: double.infinity,
                       height: 52,
@@ -799,15 +906,15 @@ class _HealthSnapshotCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFE2EEEA)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(6),
-            blurRadius: 10,
+            color: Colors.black.withAlpha(4),
+            blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
@@ -820,48 +927,37 @@ class _HealthSnapshotCard extends StatelessWidget {
               color: color.withAlpha(25),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: color, size: 22),
+            child: Icon(icon, color: color, size: 20),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF5A716E),
-                  ),
+                  style:
+                      const TextStyle(fontSize: 12, color: Color(0xFF5A716E)),
                 ),
-                const SizedBox(height: 2),
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.baseline,
-                    textBaseline: TextBaseline.alphabetic,
-                    children: [
-                      Text(
-                        value,
-                        style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF173330),
-                        ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(
+                      value,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF173330),
                       ),
-                      const SizedBox(width: 3),
-                      Text(
-                        unit,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: Color(0xFF8C9E9A),
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      unit,
+                      style: const TextStyle(
+                          fontSize: 10, color: Color(0xFF5A716E)),
+                    ),
+                  ],
                 ),
               ],
             ),
