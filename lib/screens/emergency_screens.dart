@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:medisimbio_ui/screens/existing_med_id_screen.dart';
+import 'package:medisimbio_ui/screens/emergency_qr_screens.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// 25. EMERGENCY CARE MAIN SCREEN (Phase 1D)
@@ -192,7 +192,7 @@ class EmergencyCareScreen extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => const ExistingMedIdScreen(),
+                            builder: (_) => const EmergencyQrScreen(),
                           ),
                         );
                       },
