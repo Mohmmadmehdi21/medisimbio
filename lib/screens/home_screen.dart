@@ -6,13 +6,17 @@ import 'package:medisimbio_ui/screens/auth_wrapper.dart';
 import 'package:medisimbio_ui/screens/care_screens.dart';
 import 'package:medisimbio_ui/screens/create_med_id_screen.dart';
 import 'package:medisimbio_ui/screens/edit_profile_screen.dart';
+import 'package:medisimbio_ui/screens/emergency_qr_screens.dart';
 import 'package:medisimbio_ui/screens/emergency_screens.dart';
 import 'package:medisimbio_ui/screens/existing_med_id_screen.dart';
 import 'package:medisimbio_ui/screens/feature_placeholder_screens.dart';
 import 'package:medisimbio_ui/screens/medical_records_screens.dart';
 import 'package:medisimbio_ui/screens/privacy_consent_screens.dart';
+import 'package:medisimbio_ui/screens/notification_screens.dart';
+import 'package:medisimbio_ui/screens/settings_screens.dart';
 import 'package:medisimbio_ui/services/appointment_service.dart';
 import 'package:medisimbio_ui/services/firebase_service.dart';
+import 'package:medisimbio_ui/services/notification_service.dart';
 import 'package:medisimbio_ui/services/profile_service.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -26,6 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final FirebaseService _firebaseService = FirebaseService();
   final ProfileService _profileService = ProfileService();
   final AppointmentService _appointmentService = AppointmentService();
+  final NotificationService _notificationService = NotificationService();
   int _currentIndex = 0;
 
   void _onBottomNavTapped(int index) {
@@ -125,19 +130,60 @@ class _HomeScreenState extends State<HomeScreen> {
                             Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                IconButton(
-                                  onPressed: () {
-                                    _navigateToFeature(
-                                      'Notifications',
-                                      Icons.notifications_outlined,
-                                      const Color(0xFF0B7A6E),
+                                StreamBuilder<int>(
+                                  stream: _notificationService
+                                      .streamUnreadCount(user.uid),
+                                  builder: (context, snapshot) {
+                                    final unreadCount = snapshot.data ?? 0;
+                                    return Stack(
+                                      alignment: Alignment.center,
+                                      children: [
+                                        IconButton(
+                                          onPressed: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (_) =>
+                                                    const NotificationsScreen(),
+                                              ),
+                                            );
+                                          },
+                                          icon: const Icon(
+                                            Icons.notifications_outlined,
+                                            color: Color(0xFF173330),
+                                          ),
+                                          tooltip: 'Notifications',
+                                        ),
+                                        if (unreadCount > 0)
+                                          Positioned(
+                                            right: 6,
+                                            top: 6,
+                                            child: Container(
+                                              padding: const EdgeInsets.all(4),
+                                              decoration: const BoxDecoration(
+                                                color: Color(0xFFDC2626),
+                                                shape: BoxShape.circle,
+                                              ),
+                                              constraints: const BoxConstraints(
+                                                minWidth: 16,
+                                                minHeight: 16,
+                                              ),
+                                              child: Text(
+                                                unreadCount > 99
+                                                    ? '99+'
+                                                    : unreadCount.toString(),
+                                                textAlign: TextAlign.center,
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 9,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                      ],
                                     );
                                   },
-                                  icon: const Icon(
-                                    Icons.notifications_outlined,
-                                    color: Color(0xFF173330),
-                                  ),
-                                  tooltip: 'Notifications',
                                 ),
                                 const SizedBox(width: 4),
                                 GestureDetector(
@@ -870,6 +916,18 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Color(0xFF173330)),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings_outlined, color: Color(0xFF0B7A6E)),
+            tooltip: 'Settings',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SettingsScreen()),
+              );
+            },
+          ),
+        ],
       ),
       body: user == null
           ? const Center(child: Text('No authenticated user'))
@@ -1011,6 +1069,32 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                         side: const BorderSide(color: Color(0xFFE2EEEA)),
                       ),
                       tileColor: Colors.white,
+                      leading: const Icon(Icons.settings_outlined,
+                          color: Color(0xFF0B7A6E), size: 28),
+                      title: const Text(
+                        'Settings & Preferences',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF173330)),
+                      ),
+                      subtitle: const Text('Account, Security, Privacy & Notifications',
+                          style: TextStyle(fontSize: 12)),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const SettingsScreen()),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    ListTile(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        side: const BorderSide(color: Color(0xFFE2EEEA)),
+                      ),
+                      tileColor: Colors.white,
                       leading: const Icon(Icons.shield_outlined,
                           color: Color(0xFF0B7A6E), size: 28),
                       title: const Text(
@@ -1027,6 +1111,32 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                           context,
                           MaterialPageRoute(
                               builder: (_) => const PrivacyConsentScreen()),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    ListTile(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        side: const BorderSide(color: Color(0xFFE2EEEA)),
+                      ),
+                      tileColor: Colors.white,
+                      leading: const Icon(Icons.qr_code_2_outlined,
+                          color: Colors.red, size: 28),
+                      title: const Text(
+                        'Emergency QR',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF173330)),
+                      ),
+                      subtitle: const Text('Secure identity reference for first responders',
+                          style: TextStyle(fontSize: 12)),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const EmergencyQrScreen()),
                         );
                       },
                     ),
