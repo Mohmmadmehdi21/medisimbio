@@ -10,6 +10,7 @@ import 'package:medisimbio_ui/screens/emergency_screens.dart';
 import 'package:medisimbio_ui/screens/existing_med_id_screen.dart';
 import 'package:medisimbio_ui/screens/feature_placeholder_screens.dart';
 import 'package:medisimbio_ui/screens/medical_records_screens.dart';
+import 'package:medisimbio_ui/screens/privacy_consent_screens.dart';
 import 'package:medisimbio_ui/services/appointment_service.dart';
 import 'package:medisimbio_ui/services/firebase_service.dart';
 import 'package:medisimbio_ui/services/profile_service.dart';
@@ -1000,6 +1001,32 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                           context,
                           MaterialPageRoute(
                               builder: (_) => const EditProfileScreen()),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    ListTile(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        side: const BorderSide(color: Color(0xFFE2EEEA)),
+                      ),
+                      tileColor: Colors.white,
+                      leading: const Icon(Icons.shield_outlined,
+                          color: Color(0xFF0B7A6E), size: 28),
+                      title: const Text(
+                        'Privacy & Consent',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF173330)),
+                      ),
+                      subtitle: const Text('Manage data access & provider permissions',
+                          style: TextStyle(fontSize: 12)),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const PrivacyConsentScreen()),
                         );
                       },
                     ),
