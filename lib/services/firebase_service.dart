@@ -80,6 +80,35 @@ class FirebaseService {
     }
   }
 
+  /// Change password for authenticated email/password user safely.
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw 'No authenticated user found. Please log in again.';
+    }
+
+    final email = user.email;
+    if (email == null || email.isEmpty) {
+      throw 'User account does not have a registered email address.';
+    }
+
+    try {
+      final credential = EmailAuthProvider.credential(
+        email: email,
+        password: currentPassword,
+      );
+      await user.reauthenticateWithCredential(credential);
+      await user.updatePassword(newPassword);
+    } on FirebaseAuthException catch (e) {
+      throw _handleAuthException(e);
+    } catch (e) {
+      throw 'Unable to update password. Please verify your current password.';
+    }
+  }
+
   // ===========================================================================
   // GOOGLE SIGN-IN
   // ===========================================================================
