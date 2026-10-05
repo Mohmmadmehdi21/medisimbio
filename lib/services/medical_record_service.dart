@@ -73,4 +73,18 @@ class MedicalRecordService {
           .toList();
     });
   }
+
+  Stream<List<PharmacyRecord>> streamPharmacyRecords(String userId) {
+    if (userId.isEmpty) return Stream.value([]);
+    return _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('pharmacyRecords')
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => PharmacyRecord.fromJson(doc.data(), doc.id))
+          .toList();
+    });
+  }
 }
