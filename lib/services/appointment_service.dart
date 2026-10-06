@@ -74,4 +74,77 @@ class AppointmentService {
             ? Appointment.fromJson(doc.data()!)
             : null);
   }
+
+  /// Cancels an existing appointment in Firestore.
+  Future<void> cancelAppointment({
+    required String uid,
+    required String appointmentId,
+    String? reason,
+  }) async {
+    if (uid.isEmpty || appointmentId.isEmpty) {
+      throw Exception('Invalid user ID or appointment ID.');
+    }
+
+    final docRef = _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('appointments')
+        .doc(appointmentId);
+
+    final snapshot = await docRef.get();
+    if (!snapshot.exists) {
+      throw Exception('Appointment document not found.');
+    }
+
+    final currentStatus = snapshot.data()?['status'] as String? ?? '';
+    if (currentStatus == AppointmentStatus.cancelled) {
+      throw Exception('Appointment is already cancelled.');
+    }
+    if (currentStatus == AppointmentStatus.completed) {
+      throw Exception('Completed appointments cannot be cancelled.');
+    }
+
+    await docRef.update({
+      'status': AppointmentStatus.cancelled,
+      'cancelReason': reason ?? 'Cancelled by patient',
+      'isLiveTrackingActive': false,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  /// Reschedules an existing appointment with a new date & time string in Firestore.
+  Future<void> rescheduleAppointment({
+    required String uid,
+    required String appointmentId,
+    required String newDateTime,
+  }) async {
+    if (uid.isEmpty || appointmentId.isEmpty || newDateTime.isEmpty) {
+      throw Exception('Invalid parameters for rescheduling appointment.');
+    }
+
+    final docRef = _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('appointments')
+        .doc(appointmentId);
+
+    final snapshot = await docRef.get();
+    if (!snapshot.exists) {
+      throw Exception('Appointment document not found.');
+    }
+
+    final currentStatus = snapshot.data()?['status'] as String? ?? '';
+    if (currentStatus == AppointmentStatus.cancelled) {
+      throw Exception('Cancelled appointments cannot be rescheduled.');
+    }
+    if (currentStatus == AppointmentStatus.completed) {
+      throw Exception('Completed appointments cannot be rescheduled.');
+    }
+
+    await docRef.update({
+      'dateTime': newDateTime,
+      'status': AppointmentStatus.rescheduled,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
 }
