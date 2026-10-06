@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:medisimbio_ui/screens/emergency_qr_screens.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -338,6 +340,7 @@ class EmergencyFacility {
   final double? latitude;
   final double? longitude;
   final double? distanceKm;
+  final String? etaText;
   final String? emergencyAvailabilityStatus; // 'AVAILABLE', 'UNAVAILABLE', null/unconfirmed
   final String? emergencyService; // e.g. '24-hour Emergency Department', 'Level 1 Trauma Center'
   final DateTime? lastUpdated;
@@ -351,10 +354,37 @@ class EmergencyFacility {
     this.latitude,
     this.longitude,
     this.distanceKm,
+    this.etaText,
     this.emergencyAvailabilityStatus,
     this.emergencyService,
     this.lastUpdated,
   });
+
+  /// Calculates Haversine distance in kilometers between two coordinates.
+  static double? calculateHaversineDistance({
+    required double? lat1,
+    required double? lon1,
+    required double? lat2,
+    required double? lon2,
+  }) {
+    if (lat1 == null || lon1 == null || lat2 == null || lon2 == null) {
+      return null;
+    }
+    const double r = 6371.0; // Earth radius in km
+    final dLat = _degreesToRadians(lat2 - lat1);
+    final dLon = _degreesToRadians(lon2 - lon1);
+    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(_degreesToRadians(lat1)) *
+            math.cos(_degreesToRadians(lat2)) *
+            math.sin(dLon / 2) *
+            math.sin(dLon / 2);
+    final c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+    return r * c;
+  }
+
+  static double _degreesToRadians(double degrees) {
+    return degrees * (math.pi / 180.0);
+  }
 }
 
 /// NEARBY EMERGENCY FACILITIES DISCOVERY SCREEN (Phase 1E & 1F - Real Provider Data Only)
@@ -372,7 +402,10 @@ class _NearbyEmergencyFacilitiesScreenState
   bool _isLoading = true;
   bool _locationDenied = false;
   String? _errorMessage;
-  List<EmergencyFacility> _facilities = [];
+  String _selectedCategory = 'All'; // 'All', 'Hospitals', 'Clinics'
+  List<EmergencyFacility> _allFacilities = [];
+  double? _patientLatitude;
+  double? _patientLongitude;
 
   @override
   void initState() {
@@ -394,11 +427,45 @@ class _NearbyEmergencyFacilitiesScreenState
     });
 
     try {
-      // Query backend or location provider (returns empty list when unconfigured)
-      await Future.delayed(const Duration(milliseconds: 600));
+      final snapshot = await FirebaseFirestore.instance
+          .collection('emergency_facilities')
+          .get();
+
+      final docs = snapshot.docs;
+      final List<EmergencyFacility> loaded = docs.map((doc) {
+        final data = doc.data();
+        final double? facilityLat = (data['latitude'] as num?)?.toDouble();
+        final double? facilityLng = (data['longitude'] as num?)?.toDouble();
+
+        final double? dist = EmergencyFacility.calculateHaversineDistance(
+          lat1: _patientLatitude,
+          lon1: _patientLongitude,
+          lat2: facilityLat,
+          lon2: facilityLng,
+        );
+
+        return EmergencyFacility(
+          id: doc.id,
+          name: data['name'] as String? ?? 'Healthcare Facility',
+          type: data['type'] as String? ?? 'Hospital',
+          address: data['address'] as String?,
+          phone: data['phone'] as String?,
+          latitude: facilityLat,
+          longitude: facilityLng,
+          distanceKm: dist ?? (data['distanceKm'] as num?)?.toDouble(),
+          etaText: data['etaText'] as String?,
+          emergencyAvailabilityStatus:
+              data['emergencyAvailabilityStatus'] as String?,
+          emergencyService: data['emergencyService'] as String?,
+          lastUpdated: data['lastUpdated'] != null
+              ? (data['lastUpdated'] as Timestamp).toDate()
+              : null,
+        );
+      }).toList();
+
       if (mounted) {
         setState(() {
-          _facilities = [];
+          _allFacilities = loaded;
           _isLoading = false;
         });
       }
@@ -410,6 +477,34 @@ class _NearbyEmergencyFacilitiesScreenState
         });
       }
     }
+  }
+
+  List<EmergencyFacility> get _filteredFacilities {
+    List<EmergencyFacility> list = _allFacilities;
+
+    // Filter by manual search query
+    final query = _manualSearchController.text.trim().toLowerCase();
+    if (query.isNotEmpty) {
+      list = list.where((f) {
+        final nameMatch = f.name.toLowerCase().contains(query);
+        final addressMatch = (f.address ?? '').toLowerCase().contains(query);
+        final typeMatch = f.type.toLowerCase().contains(query);
+        return nameMatch || addressMatch || typeMatch;
+      }).toList();
+    }
+
+    // Filter by category
+    if (_selectedCategory == 'Hospitals') {
+      list = list
+          .where((f) => f.type.toLowerCase().contains('hospital'))
+          .toList();
+    } else if (_selectedCategory == 'Clinics') {
+      list = list
+          .where((f) => f.type.toLowerCase().contains('clinic'))
+          .toList();
+    }
+
+    return list;
   }
 
   @override
@@ -433,6 +528,22 @@ class _NearbyEmergencyFacilitiesScreenState
           padding: const EdgeInsets.all(24.0),
           child: Column(
             children: [
+              // Category Filter Bar
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _buildCategoryChip('All'),
+                    const SizedBox(width: 8),
+                    _buildCategoryChip('Hospitals'),
+                    const SizedBox(width: 8),
+                    _buildCategoryChip('Clinics'),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
               Expanded(
                 child: _buildBodyContent(),
               ),
@@ -462,6 +573,36 @@ class _NearbyEmergencyFacilitiesScreenState
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCategoryChip(String label) {
+    final isSelected = _selectedCategory == label;
+    return ChoiceChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (selected) {
+        if (selected) {
+          setState(() {
+            _selectedCategory = label;
+          });
+        }
+      },
+      selectedColor: const Color(0xFF0B7A6E),
+      labelStyle: TextStyle(
+        color: isSelected ? Colors.white : const Color(0xFF173330),
+        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        fontSize: 13,
+      ),
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(
+          color: isSelected
+              ? const Color(0xFF0B7A6E)
+              : const Color(0xFFE2EEEA),
         ),
       ),
     );
@@ -669,12 +810,12 @@ class _NearbyEmergencyFacilitiesScreenState
       );
     }
 
-    if (_facilities.isEmpty) {
+    final displayFacilities = _filteredFacilities;
+
+    if (displayFacilities.isEmpty) {
       return ListView(
         children: [
           const SizedBox(height: 32),
-
-          // Unavailable State Icon Container
           Center(
             child: Container(
               padding: const EdgeInsets.all(24),
@@ -689,11 +830,9 @@ class _NearbyEmergencyFacilitiesScreenState
               ),
             ),
           ),
-
           const SizedBox(height: 24),
-
           const Text(
-            'No Nearby Emergency Facilities Available',
+            'No Nearby Emergency Facilities Found',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 20,
@@ -701,9 +840,7 @@ class _NearbyEmergencyFacilitiesScreenState
               color: Color(0xFF173330),
             ),
           ),
-
           const SizedBox(height: 12),
-
           const Text(
             'No nearby emergency care facilities are currently registered in your area.\nPlease call local emergency dispatch (112 / 911) or proceed directly to the nearest hospital.',
             textAlign: TextAlign.center,
@@ -713,35 +850,7 @@ class _NearbyEmergencyFacilitiesScreenState
               height: 1.4,
             ),
           ),
-
           const SizedBox(height: 32),
-
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.amber.withAlpha(25),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.amber.shade200),
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.security, color: Colors.amber),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Location data is accessed strictly on-demand for emergency discovery.',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Color(0xFF173330),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 24),
-
           SizedBox(
             width: double.infinity,
             height: 48,
@@ -768,10 +877,10 @@ class _NearbyEmergencyFacilitiesScreenState
     }
 
     return ListView.separated(
-      itemCount: _facilities.length,
+      itemCount: displayFacilities.length,
       separatorBuilder: (_, __) => const SizedBox(height: 14),
       itemBuilder: (context, index) {
-        final facility = _facilities[index];
+        final facility = displayFacilities[index];
         return _EmergencyFacilityCard(facility: facility);
       },
     );
@@ -862,7 +971,11 @@ class _EmergencyFacilityCard extends StatelessWidget {
 
     final String distanceText = facility.distanceKm != null
         ? 'Distance: ${facility.distanceKm!.toStringAsFixed(1)} km'
-        : 'Distance: --';
+        : 'Distance: Distance unavailable';
+
+    final String etaText = (facility.etaText != null && facility.etaText!.trim().isNotEmpty)
+        ? 'Estimated arrival: ${facility.etaText!.trim()}'
+        : 'Estimated arrival: Estimated arrival unavailable';
 
     return InkWell(
       onTap: () {
@@ -951,7 +1064,7 @@ class _EmergencyFacilityCard extends StatelessWidget {
 
             const Divider(height: 24),
 
-            // Emergency Availability & Distance Metrics
+            // Emergency Availability & Distance & ETA Metrics
             Text(
               availabilityText,
               style: TextStyle(
@@ -969,6 +1082,16 @@ class _EmergencyFacilityCard extends StatelessWidget {
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
                 color: Color(0xFF173330),
+              ),
+            ),
+
+            const SizedBox(height: 2),
+
+            Text(
+              etaText,
+              style: const TextStyle(
+                fontSize: 12,
+                color: Color(0xFF5A716E),
               ),
             ),
 
@@ -1122,7 +1245,7 @@ class EmergencyFacilityDetailsScreen extends StatelessWidget {
 
     final String distanceText = facility.distanceKm != null
         ? '${facility.distanceKm!.toStringAsFixed(1)} km'
-        : '--';
+        : 'Distance unavailable';
 
     final String phoneText = (facility.phone != null && facility.phone!.trim().isNotEmpty)
         ? facility.phone!.trim()
@@ -1268,6 +1391,15 @@ class EmergencyFacilityDetailsScreen extends StatelessWidget {
                           ),
                           const Divider(height: 24),
                           _buildDetailRow(
+                            icon: Icons.timer_outlined,
+                            label: 'Estimated arrival',
+                            value: (facility.etaText != null &&
+                                    facility.etaText!.trim().isNotEmpty)
+                                ? facility.etaText!.trim()
+                                : 'Estimated arrival unavailable',
+                          ),
+                          const Divider(height: 24),
+                          _buildDetailRow(
                             icon: Icons.verified_outlined,
                             label: 'Emergency availability',
                             value: availabilityText,
@@ -1279,7 +1411,10 @@ class EmergencyFacilityDetailsScreen extends StatelessWidget {
                             _buildDetailRow(
                               icon: Icons.update_outlined,
                               label: 'Last updated',
-                              value: facility.lastUpdated!.toLocal().toString().split('.')[0],
+                              value: facility.lastUpdated!
+                                  .toLocal()
+                                  .toString()
+                                  .split('.')[0],
                             ),
                           ],
                         ],
