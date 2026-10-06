@@ -13,6 +13,7 @@ import 'package:medisimbio_ui/screens/feature_placeholder_screens.dart';
 import 'package:medisimbio_ui/screens/medical_records_screens.dart';
 import 'package:medisimbio_ui/screens/privacy_consent_screens.dart';
 import 'package:medisimbio_ui/screens/notification_screens.dart';
+import 'package:medisimbio_ui/screens/pharmacy_workflow_screens.dart';
 import 'package:medisimbio_ui/screens/settings_screens.dart';
 import 'package:medisimbio_ui/services/appointment_service.dart';
 import 'package:medisimbio_ui/services/firebase_service.dart';
@@ -396,11 +397,15 @@ class _HomeScreenState extends State<HomeScreen> {
                               title: 'Pharmacy',
                               icon: Icons.local_pharmacy_outlined,
                               accentColor: Colors.deepOrange,
-                              onTap: () => _navigateToFeature(
-                                'Pharmacy',
-                                Icons.local_pharmacy_outlined,
-                                Colors.deepOrange,
-                              ),
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        const PharmacyDiscoveryScreen(),
+                                  ),
+                                );
+                              },
                             ),
                           ],
                         ),
