@@ -87,4 +87,27 @@ class MedicalRecordService {
           .toList();
     });
   }
+
+  /// Streams available partner pharmacies from Firestore.
+  Stream<List<Map<String, dynamic>>> streamAvailablePharmacies() {
+    return _firestore.collection('pharmacies').snapshots().map((snapshot) {
+      return snapshot.docs
+          .map((doc) => {'id': doc.id, ...doc.data()})
+          .toList();
+    });
+  }
+
+  /// Creates and submits a new PharmacyRecord for the authenticated patient.
+  Future<String> createPharmacyRecord(
+      String userId, PharmacyRecord record) async {
+    if (userId.isEmpty) throw Exception('Authentication required.');
+
+    final docRef = await _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('pharmacyRecords')
+        .add(record.toJson());
+
+    return docRef.id;
+  }
 }
