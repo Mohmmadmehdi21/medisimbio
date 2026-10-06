@@ -111,4 +111,19 @@ class NotificationService {
       throw Exception('Unable to update all notifications as read.');
     }
   }
+
+  /// Creates and persists a new patient notification event in Firestore.
+  Future<void> createNotification(
+      String patientId, AppNotification notification) async {
+    if (patientId.isEmpty) return;
+    try {
+      final docRef = _notificationsCollection(patientId)
+          .doc(notification.notificationId.isNotEmpty
+              ? notification.notificationId
+              : null);
+      await docRef.set(notification.toMap());
+    } catch (_) {
+      // Non-blocking notification write
+    }
+  }
 }
