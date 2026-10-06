@@ -108,4 +108,50 @@ class Appointment {
           : null,
     );
   }
+
+  Appointment copyWith({
+    String? id,
+    String? uid,
+    String? doctorId,
+    String? doctorName,
+    String? specialty,
+    String? hospitalName,
+    String? dateTime,
+    String? consultationType,
+    String? status,
+    double? consultationFee,
+    bool? isLiveTrackingActive,
+    String? tokenNumber,
+    String? currentServingToken,
+    int? queuePosition,
+    int? estimatedWaitMinutes,
+    DateTime? trackingLastUpdated,
+    String? hospitalAddress,
+    double? latitude,
+    double? longitude,
+    DateTime? createdAt,
+  }) {
+    return Appointment(
+      id: id ?? this.id,
+      uid: uid ?? this.uid,
+      doctorId: doctorId ?? this.doctorId,
+      doctorName: doctorName ?? this.doctorName,
+      specialty: specialty ?? this.specialty,
+      hospitalName: hospitalName ?? this.hospitalName,
+      dateTime: dateTime ?? this.dateTime,
+      consultationType: consultationType ?? this.consultationType,
+      status: status ?? this.status,
+      consultationFee: consultationFee ?? this.consultationFee,
+      isLiveTrackingActive: isLiveTrackingActive ?? this.isLiveTrackingActive,
+      tokenNumber: tokenNumber ?? this.tokenNumber,
+      currentServingToken: currentServingToken ?? this.currentServingToken,
+      queuePosition: queuePosition ?? this.queuePosition,
+      estimatedWaitMinutes: estimatedWaitMinutes ?? this.estimatedWaitMinutes,
+      trackingLastUpdated: trackingLastUpdated ?? this.trackingLastUpdated,
+      hospitalAddress: hospitalAddress ?? this.hospitalAddress,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
 }
